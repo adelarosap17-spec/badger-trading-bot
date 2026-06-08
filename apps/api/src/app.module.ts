@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { BinanceModule } from './binance/binance.module';
 import { CandlesModule } from './candles/candles.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
@@ -17,6 +18,7 @@ import { MarketDataModule } from './market-data/market-data.module';
     MarketDataModule,
     CandlesModule,
     IndicatorsModule,
+    BinanceModule,
   ],
 })
 export class AppModule {}
