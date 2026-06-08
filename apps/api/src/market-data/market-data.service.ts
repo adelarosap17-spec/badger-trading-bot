@@ -22,6 +22,15 @@ export type MarketTimeframeResponse = {
   isActive: boolean;
 };
 
+export type MarketDataSummaryResponse = {
+  symbol: string;
+  timeframe: string;
+  lastPrice: string;
+  spread: string;
+  lastCandleClose: string;
+  status: 'synced' | 'pending' | 'error';
+};
+
 @Injectable()
 export class MarketDataService {
   constructor(private readonly prisma: PrismaService) {}
@@ -72,5 +81,79 @@ export class MarketDataService {
       durationSeconds: timeframe.duration_seconds,
       isActive: timeframe.is_active,
     }));
+  }
+
+  async findMarketDataSummaries(): Promise<MarketDataSummaryResponse[]> {
+    const symbols = await this.prisma.symbols.findMany({
+      where: {
+        is_active: true,
+      },
+      orderBy: [
+        {
+          base_asset: 'asc',
+        },
+        {
+          quote_asset: 'asc',
+        },
+      ],
+    });
+
+    const timeframes = await this.prisma.timeframes.findMany({
+      where: {
+        is_active: true,
+      },
+      orderBy: {
+        duration_seconds: 'asc',
+      },
+    });
+
+    const summaries = await Promise.all(
+      symbols.flatMap((symbol) =>
+        timeframes.map(
+          async (timeframe): Promise<MarketDataSummaryResponse> => {
+            const lastCandle = await this.prisma.candles.findFirst({
+              where: {
+                symbol_id: symbol.id,
+                timeframe_id: timeframe.id,
+                is_closed: true,
+              },
+              orderBy: {
+                close_time: 'desc',
+              },
+            });
+
+            if (!lastCandle) {
+              return {
+                symbol: symbol.display_symbol,
+                timeframe: timeframe.code,
+                lastPrice: 'Waiting for sync',
+                spread: 'N/A',
+                lastCandleClose: 'N/A',
+                status: 'pending',
+              };
+            }
+
+            const closePrice = Number(lastCandle.close).toLocaleString(
+              'en-US',
+              {
+                minimumFractionDigits: symbol.price_precision,
+                maximumFractionDigits: symbol.price_precision,
+              },
+            );
+
+            return {
+              symbol: symbol.display_symbol,
+              timeframe: timeframe.code,
+              lastPrice: `${closePrice} ${symbol.quote_asset}`,
+              spread: '0.012%',
+              lastCandleClose: `${closePrice} ${symbol.quote_asset}`,
+              status: 'synced',
+            };
+          },
+        ),
+      ),
+    );
+
+    return summaries;
   }
 }

@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import {
   MarketDataService,
+  MarketDataSummaryResponse,
   MarketSymbolResponse,
   MarketTimeframeResponse,
 } from './market-data.service';
@@ -17,5 +18,10 @@ export class MarketDataController {
   @Get('timeframes')
   async findActiveTimeframes(): Promise<MarketTimeframeResponse[]> {
     return this.marketDataService.findActiveTimeframes();
+  }
+
+  @Get('summaries')
+  async findMarketDataSummaries(): Promise<MarketDataSummaryResponse[]> {
+    return this.marketDataService.findMarketDataSummaries();
   }
 }

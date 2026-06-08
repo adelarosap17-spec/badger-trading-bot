@@ -1,6 +1,7 @@
 import { apiGet } from "../../../shared/lib/apiClient";
 import type {
   MarketSymbolResponse,
+  MarketSymbolSummary,
   MarketTimeframeResponse,
 } from "../types/market-data.types";
 
@@ -12,4 +13,10 @@ export async function fetchMarketTimeframes(): Promise<
   MarketTimeframeResponse[]
 > {
   return apiGet<MarketTimeframeResponse[]>("/market-data/timeframes");
+}
+
+export async function fetchMarketDataSummaries(): Promise<
+  MarketSymbolSummary[]
+> {
+  return apiGet<MarketSymbolSummary[]>("/market-data/summaries");
 }
