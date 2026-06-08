@@ -1,0 +1,289 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model bot_logs {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  level      String
+  source     String
+  message    String
+  metadata   Json     @default("{}")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([level, created_at(sort: Desc)])
+  @@index([source, created_at(sort: Desc)])
+}
+
+model bot_settings {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String   @unique
+  value       Json     @default("{}")
+  description String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model candles {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  symbol_id           String                @db.Uuid
+  timeframe_id        String                @db.Uuid
+  open_time           DateTime              @db.Timestamptz(6)
+  close_time          DateTime              @db.Timestamptz(6)
+  open                Decimal               @db.Decimal(28, 12)
+  high                Decimal               @db.Decimal(28, 12)
+  low                 Decimal               @db.Decimal(28, 12)
+  close               Decimal               @db.Decimal(28, 12)
+  volume              Decimal               @default(0) @db.Decimal(28, 12)
+  source              String                @default("binance")
+  is_closed           Boolean               @default(true)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  symbols             symbols               @relation(fields: [symbol_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  timeframes          timeframes            @relation(fields: [timeframe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  indicator_snapshots indicator_snapshots[]
+  signals             signals[]
+
+  @@unique([symbol_id, timeframe_id, open_time], map: "candles_symbol_timeframe_open_time_unique")
+  @@index([open_time(sort: Desc)])
+  @@index([symbol_id, timeframe_id, close_time(sort: Desc)], map: "candles_symbol_timeframe_close_time_idx")
+}
+
+model equity_snapshots {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paper_account_id     String              @db.Uuid
+  strategy_instance_id String?             @db.Uuid
+  balance              Decimal             @db.Decimal(28, 12)
+  equity               Decimal             @db.Decimal(28, 12)
+  open_pnl             Decimal             @default(0) @db.Decimal(28, 12)
+  drawdown_percent     Decimal             @default(0) @db.Decimal(28, 12)
+  recorded_at          DateTime            @default(now()) @db.Timestamptz(6)
+  created_at           DateTime            @default(now()) @db.Timestamptz(6)
+  paper_accounts       paper_accounts      @relation(fields: [paper_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  strategy_instances   strategy_instances? @relation(fields: [strategy_instance_id], references: [id], onUpdate: NoAction)
+
+  @@index([paper_account_id, recorded_at(sort: Desc)], map: "equity_snapshots_account_recorded_at_idx")
+  @@index([strategy_instance_id, recorded_at(sort: Desc)], map: "equity_snapshots_strategy_recorded_at_idx")
+}
+
+model indicator_snapshots {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  symbol_id      String     @db.Uuid
+  timeframe_id   String     @db.Uuid
+  candle_id      String     @db.Uuid
+  indicator_code String
+  settings       Json       @default("{}")
+  value          Decimal?   @db.Decimal(28, 12)
+  values_json    Json?
+  calculated_at  DateTime   @default(now()) @db.Timestamptz(6)
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  candles        candles    @relation(fields: [candle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  symbols        symbols    @relation(fields: [symbol_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  timeframes     timeframes @relation(fields: [timeframe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([candle_id, indicator_code, settings], map: "indicator_snapshots_unique")
+  @@index([indicator_code])
+  @@index([symbol_id, timeframe_id], map: "indicator_snapshots_symbol_timeframe_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model market_providers {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  code       String    @unique
+  type       String
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  symbols    symbols[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orders {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paper_account_id     String             @db.Uuid
+  position_id          String?            @db.Uuid
+  strategy_instance_id String             @db.Uuid
+  symbol_id            String             @db.Uuid
+  side                 String
+  type                 String             @default("market")
+  status               String             @default("pending")
+  requested_price      Decimal?           @db.Decimal(28, 12)
+  executed_price       Decimal?           @db.Decimal(28, 12)
+  quantity             Decimal            @db.Decimal(28, 12)
+  fee                  Decimal            @default(0) @db.Decimal(28, 12)
+  spread               Decimal            @default(0) @db.Decimal(28, 12)
+  created_at           DateTime           @default(now()) @db.Timestamptz(6)
+  executed_at          DateTime?          @db.Timestamptz(6)
+  cancelled_at         DateTime?          @db.Timestamptz(6)
+  paper_accounts       paper_accounts     @relation(fields: [paper_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  positions            positions?         @relation(fields: [position_id], references: [id], onUpdate: NoAction)
+  strategy_instances   strategy_instances @relation(fields: [strategy_instance_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  symbols              symbols            @relation(fields: [symbol_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([position_id])
+  @@index([status])
+  @@index([strategy_instance_id, created_at(sort: Desc)], map: "orders_strategy_instance_created_at_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model paper_accounts {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  initial_balance  Decimal            @db.Decimal(28, 12)
+  current_balance  Decimal            @db.Decimal(28, 12)
+  currency         String             @default("USDT")
+  status           String             @default("active")
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  equity_snapshots equity_snapshots[]
+  orders           orders[]
+  positions        positions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model positions {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paper_account_id     String             @db.Uuid
+  strategy_instance_id String             @db.Uuid
+  symbol_id            String             @db.Uuid
+  side                 String
+  status               String             @default("open")
+  entry_price          Decimal            @db.Decimal(28, 12)
+  exit_price           Decimal?           @db.Decimal(28, 12)
+  quantity             Decimal            @db.Decimal(28, 12)
+  notional_value       Decimal            @db.Decimal(28, 12)
+  stop_loss_price      Decimal?           @db.Decimal(28, 12)
+  take_profit_price    Decimal?           @db.Decimal(28, 12)
+  opened_at            DateTime           @default(now()) @db.Timestamptz(6)
+  closed_at            DateTime?          @db.Timestamptz(6)
+  gross_pnl            Decimal?           @db.Decimal(28, 12)
+  net_pnl              Decimal?           @db.Decimal(28, 12)
+  fees_paid            Decimal            @default(0) @db.Decimal(28, 12)
+  spread_cost          Decimal            @default(0) @db.Decimal(28, 12)
+  close_reason         String?
+  created_at           DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime           @default(now()) @db.Timestamptz(6)
+  orders               orders[]
+  paper_accounts       paper_accounts     @relation(fields: [paper_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  strategy_instances   strategy_instances @relation(fields: [strategy_instance_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  symbols              symbols            @relation(fields: [symbol_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([opened_at(sort: Desc)])
+  @@index([paper_account_id, status], map: "positions_paper_account_status_idx")
+  @@index([strategy_instance_id, status], map: "positions_strategy_instance_status_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model signals {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  strategy_instance_id String             @db.Uuid
+  symbol_id            String             @db.Uuid
+  timeframe_id         String             @db.Uuid
+  candle_id            String?            @db.Uuid
+  type                 String
+  status               String             @default("generated")
+  price                Decimal?           @db.Decimal(28, 12)
+  reason               String?
+  indicators_snapshot  Json               @default("{}")
+  spread_percent       Decimal?           @db.Decimal(28, 12)
+  created_at           DateTime           @default(now()) @db.Timestamptz(6)
+  executed_at          DateTime?          @db.Timestamptz(6)
+  ignored_reason       String?
+  candles              candles?           @relation(fields: [candle_id], references: [id], onUpdate: NoAction)
+  strategy_instances   strategy_instances @relation(fields: [strategy_instance_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  symbols              symbols            @relation(fields: [symbol_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  timeframes           timeframes         @relation(fields: [timeframe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status])
+  @@index([strategy_instance_id, created_at(sort: Desc)], map: "signals_strategy_instance_created_at_idx")
+  @@index([symbol_id, timeframe_id, created_at(sort: Desc)], map: "signals_symbol_timeframe_created_at_idx")
+}
+
+model strategy_definitions {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  code               String               @unique
+  description        String?
+  version            String               @default("1.0.0")
+  is_active          Boolean              @default(true)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  strategy_instances strategy_instances[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model strategy_instances {
+  id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  strategy_definition_id String               @db.Uuid
+  symbol_id              String               @db.Uuid
+  timeframe_id           String               @db.Uuid
+  name                   String
+  mode                   String               @default("paper")
+  status                 String               @default("stopped")
+  settings               Json                 @default("{}")
+  risk_settings          Json                 @default("{}")
+  capital_allocated      Decimal              @default(0) @db.Decimal(28, 12)
+  is_active              Boolean              @default(true)
+  created_at             DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime             @default(now()) @db.Timestamptz(6)
+  equity_snapshots       equity_snapshots[]
+  orders                 orders[]
+  positions              positions[]
+  signals                signals[]
+  strategy_definitions   strategy_definitions @relation(fields: [strategy_definition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  symbols                symbols              @relation(fields: [symbol_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  timeframes             timeframes           @relation(fields: [timeframe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([strategy_definition_id, symbol_id, timeframe_id, mode], map: "strategy_instances_unique")
+  @@index([status])
+  @@index([symbol_id, timeframe_id], map: "strategy_instances_symbol_timeframe_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model symbols {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  market_provider_id  String                @db.Uuid
+  market_type         String
+  base_asset          String
+  quote_asset         String
+  symbol              String
+  display_symbol      String
+  price_precision     Int                   @default(8)
+  quantity_precision  Int                   @default(8)
+  min_notional        Decimal?              @db.Decimal(28, 12)
+  pip_size            Decimal?              @db.Decimal(28, 12)
+  is_active           Boolean               @default(true)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  candles             candles[]
+  indicator_snapshots indicator_snapshots[]
+  orders              orders[]
+  positions           positions[]
+  signals             signals[]
+  strategy_instances  strategy_instances[]
+  market_providers    market_providers      @relation(fields: [market_provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([market_provider_id, symbol], map: "symbols_provider_symbol_unique")
+  @@index([market_provider_id])
+  @@index([symbol])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model timeframes {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                String                @unique
+  label               String
+  duration_seconds    Int
+  is_active           Boolean               @default(true)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  candles             candles[]
+  indicator_snapshots indicator_snapshots[]
+  signals             signals[]
+  strategy_instances  strategy_instances[]
+}
