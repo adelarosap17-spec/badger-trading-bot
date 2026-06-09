@@ -1,11 +1,22 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { StrategyDecision, StrategyEvaluationResponse } from './strategy.types';
+import {
+  SavedStrategySignalResponse,
+  StrategyDecision,
+  StrategyEvaluationResponse,
+} from './strategy.types';
 
 type EvaluateStrategyParams = {
   symbol?: string;
   timeframe?: string;
   limit?: string;
+};
+
+type StrategyEvaluationInternalResult = StrategyEvaluationResponse & {
+  symbolId: string;
+  timeframeId: string;
+  candleId: string | null;
+  latestCloseValue: number | null;
 };
 
 @Injectable()
@@ -15,6 +26,55 @@ export class StrategiesService {
   async evaluateStrategy(
     params: EvaluateStrategyParams,
   ): Promise<StrategyEvaluationResponse> {
+    const evaluation = await this.evaluateStrategyInternal(params);
+
+    return this.toPublicEvaluation(evaluation);
+  }
+
+  async evaluateAndSaveSignal(
+    params: EvaluateStrategyParams,
+  ): Promise<SavedStrategySignalResponse> {
+    const evaluation = await this.evaluateStrategyInternal(params);
+
+    const strategyInstance = await this.findOrCreateStrategyInstance({
+      symbolId: evaluation.symbolId,
+      timeframeId: evaluation.timeframeId,
+      symbol: evaluation.symbol,
+      timeframe: evaluation.timeframe,
+    });
+
+    const signal = await this.prisma.signals.create({
+      data: {
+        strategy_instance_id: strategyInstance.id,
+        symbol_id: evaluation.symbolId,
+        timeframe_id: evaluation.timeframeId,
+        candle_id: evaluation.candleId,
+        type: evaluation.decision,
+        status: this.getSignalStatus(evaluation.decision),
+        price: evaluation.latestCloseValue,
+        reason: evaluation.reason,
+        indicators_snapshot: {
+          ema9: evaluation.ema9,
+          ema21: evaluation.ema21,
+          rsi14: evaluation.rsi14,
+          latestClose: evaluation.latestClose,
+          candleCount: evaluation.candleCount,
+        },
+        spread_percent: null,
+      },
+    });
+
+    return {
+      ...this.toPublicEvaluation(evaluation),
+      signalId: signal.id,
+      signalStatus: signal.status,
+      savedAt: signal.created_at.toISOString(),
+    };
+  }
+
+  private async evaluateStrategyInternal(
+    params: EvaluateStrategyParams,
+  ): Promise<StrategyEvaluationInternalResult> {
     const symbolCode = this.parseSymbol(params.symbol);
     const timeframeCode = this.parseTimeframe(params.timeframe);
     const limit = this.parseLimit(params.limit);
@@ -58,14 +118,19 @@ export class StrategiesService {
     const orderedCandles = candles.reverse();
     const closes = orderedCandles.map((candle) => Number(candle.close));
     const latestClose = closes.at(-1);
+    const latestCandle = orderedCandles.at(-1);
 
     if (latestClose === undefined) {
       return {
+        symbolId: symbol.id,
+        timeframeId: timeframe.id,
+        candleId: null,
         symbol: symbol.symbol,
         timeframe: timeframe.code,
         strategyName: 'EMA RSI Crossover',
         candleCount: closes.length,
         latestClose: 'N/A',
+        latestCloseValue: null,
         ema9: null,
         ema21: null,
         rsi14: null,
@@ -86,17 +151,107 @@ export class StrategiesService {
     });
 
     return {
+      symbolId: symbol.id,
+      timeframeId: timeframe.id,
+      candleId: latestCandle?.id ?? null,
       symbol: symbol.symbol,
       timeframe: timeframe.code,
       strategyName: 'EMA RSI Crossover',
       candleCount: closes.length,
       latestClose: this.formatNumber(latestClose, symbol.price_precision),
+      latestCloseValue: latestClose,
       ema9: this.formatNullableNumber(ema9, symbol.price_precision),
       ema21: this.formatNullableNumber(ema21, symbol.price_precision),
       rsi14: this.formatNullableNumber(rsi14, 2),
       decision: evaluation.decision,
       reason: evaluation.reason,
       evaluatedAt: new Date().toISOString(),
+    };
+  }
+
+  private async findOrCreateStrategyInstance(params: {
+    symbolId: string;
+    timeframeId: string;
+    symbol: string;
+    timeframe: string;
+  }) {
+    const strategyDefinition = await this.prisma.strategy_definitions.findFirst(
+      {
+        where: {
+          code: 'EMA_RSI_CROSSOVER',
+          is_active: true,
+        },
+      },
+    );
+
+    if (!strategyDefinition) {
+      throw new BadRequestException(
+        'Strategy definition EMA_RSI_CROSSOVER was not found.',
+      );
+    }
+
+    const existingInstance = await this.prisma.strategy_instances.findFirst({
+      where: {
+        strategy_definition_id: strategyDefinition.id,
+        symbol_id: params.symbolId,
+        timeframe_id: params.timeframeId,
+        mode: 'paper',
+      },
+    });
+
+    if (existingInstance) {
+      return existingInstance;
+    }
+
+    return this.prisma.strategy_instances.create({
+      data: {
+        strategy_definition_id: strategyDefinition.id,
+        symbol_id: params.symbolId,
+        timeframe_id: params.timeframeId,
+        name: `${strategyDefinition.name} - ${params.symbol} - ${params.timeframe}`,
+        mode: 'paper',
+        status: 'running',
+        settings: {
+          fastEmaPeriod: 9,
+          slowEmaPeriod: 21,
+          rsiPeriod: 14,
+          rsiMin: 35,
+          rsiMax: 70,
+        },
+        risk_settings: {
+          riskPerTradePercent: 1,
+          dailyLossLimitPercent: 3,
+          dailyProfitTargetPercent: 5,
+        },
+        capital_allocated: 100,
+        is_active: true,
+      },
+    });
+  }
+
+  private getSignalStatus(decision: StrategyDecision): string {
+    if (decision === 'hold') {
+      return 'ignored';
+    }
+
+    return 'generated';
+  }
+
+  private toPublicEvaluation(
+    evaluation: StrategyEvaluationInternalResult,
+  ): StrategyEvaluationResponse {
+    return {
+      symbol: evaluation.symbol,
+      timeframe: evaluation.timeframe,
+      strategyName: evaluation.strategyName,
+      candleCount: evaluation.candleCount,
+      latestClose: evaluation.latestClose,
+      ema9: evaluation.ema9,
+      ema21: evaluation.ema21,
+      rsi14: evaluation.rsi14,
+      decision: evaluation.decision,
+      reason: evaluation.reason,
+      evaluatedAt: evaluation.evaluatedAt,
     };
   }
 

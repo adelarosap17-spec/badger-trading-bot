@@ -13,3 +13,9 @@ export type StrategyEvaluationResponse = {
   reason: string;
   evaluatedAt: string;
 };
+
+export type SavedStrategySignalResponse = StrategyEvaluationResponse & {
+  signalId: string;
+  signalStatus: string;
+  savedAt: string;
+};
