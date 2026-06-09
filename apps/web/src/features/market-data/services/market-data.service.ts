@@ -1,5 +1,6 @@
 import { apiGet } from "../../../shared/lib/apiClient";
 import type {
+  IndicatorSummaryResponse,
   MarketSymbolResponse,
   MarketSymbolSummary,
   MarketTimeframeResponse,
@@ -19,4 +20,18 @@ export async function fetchMarketDataSummaries(): Promise<
   MarketSymbolSummary[]
 > {
   return apiGet<MarketSymbolSummary[]>("/market-data/summaries");
+}
+
+export async function fetchIndicatorSummary(params: {
+  symbol: string;
+  timeframe: string;
+}): Promise<IndicatorSummaryResponse> {
+  const searchParams = new URLSearchParams({
+    symbol: params.symbol,
+    timeframe: params.timeframe,
+  });
+
+  return apiGet<IndicatorSummaryResponse>(
+    `/indicators?${searchParams.toString()}`,
+  );
 }

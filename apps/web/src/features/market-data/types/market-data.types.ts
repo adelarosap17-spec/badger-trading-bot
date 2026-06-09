@@ -29,3 +29,13 @@ export type MarketSymbolSummary = {
   lastCandleClose: string;
   status: MarketSyncStatus;
 };
+
+export type IndicatorSummaryResponse = {
+  symbol: string;
+  timeframe: string;
+  candleCount: number;
+  latestClose: string;
+  ema9: string | null;
+  ema21: string | null;
+  rsi14: string | null;
+};
