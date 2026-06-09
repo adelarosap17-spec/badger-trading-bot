@@ -42,5 +42,6 @@ export type SyncBinanceCandlesResponse = {
   requestedLimit: number;
   receivedFromBinance: number;
   closedCandles: number;
-  insertedOrSkipped: number;
+  insertedCandles: number;
+  skippedCandles: number;
 };

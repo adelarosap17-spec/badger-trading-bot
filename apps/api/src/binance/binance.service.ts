@@ -93,7 +93,8 @@ export class BinanceService {
         requestedLimit: limit,
         receivedFromBinance: response.total,
         closedCandles: 0,
-        insertedOrSkipped: 0,
+        insertedCandles: 0,
+        skippedCandles: 0,
       };
     }
 
@@ -120,7 +121,8 @@ export class BinanceService {
       requestedLimit: limit,
       receivedFromBinance: response.total,
       closedCandles: closedKlines.length,
-      insertedOrSkipped: createResult.count,
+      insertedCandles: createResult.count,
+      skippedCandles: closedKlines.length - createResult.count,
     };
   }
 
