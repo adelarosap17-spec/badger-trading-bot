@@ -7,6 +7,7 @@ import { HealthModule } from './health/health.module';
 import { IndicatorsModule } from './indicators/indicators.module';
 import { MarketDataModule } from './market-data/market-data.module';
 import { MarketDataSyncModule } from './market-data-sync/market-data-sync.module';
+import { SignalsModule } from './signals/signals.module';
 import { StrategiesModule } from './strategies/strategy.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { StrategiesModule } from './strategies/strategy.module';
     BinanceModule,
     MarketDataSyncModule,
     StrategiesModule,
+    SignalsModule,
   ],
 })
 export class AppModule {}
