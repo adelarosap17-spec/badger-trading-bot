@@ -48,7 +48,7 @@ export function SignalCard({
          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
                <p className="text-sm text-slate-400">
-                  {symbol} · {timeframe} · {strategyName}
+                  {symbol} • {timeframe} • {strategyName}
                </p>
 
                <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
@@ -66,7 +66,12 @@ export function SignalCard({
                   {typeLabelByType[type]}
                </span>
 
-               <span className={["text-xs font-semibold", statusClassByStatus[status]].join(" ")}>
+               <span
+                  className={[
+                     "text-xs font-semibold",
+                     statusClassByStatus[status],
+                  ].join(" ")}
+               >
                   {status.toUpperCase()}
                </span>
             </div>
@@ -91,14 +96,18 @@ export function SignalCard({
                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                   EMA Fast
                </p>
-               <p className="mt-2 text-base font-semibold text-white">{emaFast}</p>
+               <p className="mt-2 text-base font-semibold text-white">
+                  {emaFast}
+               </p>
             </div>
 
             <div>
                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                   EMA Slow
                </p>
-               <p className="mt-2 text-base font-semibold text-white">{emaSlow}</p>
+               <p className="mt-2 text-base font-semibold text-white">
+                  {emaSlow}
+               </p>
             </div>
 
             <div>

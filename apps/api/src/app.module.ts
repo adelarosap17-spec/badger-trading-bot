@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { IndicatorsModule } from './indicators/indicators.module';
 import { MarketDataModule } from './market-data/market-data.module';
+import { RiskModule } from './risk/risk.module';
 import { MarketDataSyncModule } from './market-data-sync/market-data-sync.module';
 import { SignalsModule } from './signals/signals.module';
 import { StrategiesModule } from './strategies/strategy.module';
@@ -25,6 +26,7 @@ import { StrategiesModule } from './strategies/strategy.module';
     MarketDataSyncModule,
     StrategiesModule,
     SignalsModule,
+     RiskModule,
   ],
 })
 export class AppModule {}
