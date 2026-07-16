@@ -1,0 +1,20 @@
+export type PositionSummaryResponse = {
+  id: string;
+  symbol: string;
+  timeframe: string;
+  strategyName: string;
+  side: string;
+  status: string;
+  entryPrice: string;
+  exitPrice: string | null;
+  quantity: string;
+  notionalValue: string;
+  stopLossPrice: string;
+  takeProfitPrice: string;
+  netPnl: string;
+  netPnlPercent: string;
+  feesPaid: string;
+  openedAt: string;
+  closedAt: string | null;
+  closeReason: string | null;
+};

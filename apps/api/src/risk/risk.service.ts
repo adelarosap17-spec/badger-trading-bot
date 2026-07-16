@@ -114,15 +114,16 @@ export class RiskService {
     const riskPerUnit = entryPrice - stopLossPrice;
     const quantity = riskAmount / riskPerUnit;
     const notionalValue = quantity * entryPrice;
+    const maxAllowedNotional = currentBalance;
 
-    if (notionalValue > currentBalance) {
-      return this.rejectAndUpdate({
-        signal,
-        paperAccount,
-        reason:
-          'Calculated position notional is greater than the paper account balance.',
-      });
-    }
+if (notionalValue > maxAllowedNotional + 0.000001) {
+  return this.rejectAndUpdate({
+    signal,
+    paperAccount,
+    reason:
+      'Calculated position notional is greater than the paper account balance.',
+  });
+}
 
     await this.approveSignal(signal.id);
 

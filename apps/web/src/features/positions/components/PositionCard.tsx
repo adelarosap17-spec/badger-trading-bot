@@ -27,6 +27,18 @@ const closeReasonLabelByReason: Record<PositionCloseReason, string> = {
    cancelled: "Cancelled",
 };
 
+function getPnlClassName(netPnl: string): string {
+   if (netPnl.trim().startsWith("+")) {
+      return "text-emerald-300";
+   }
+
+   if (netPnl.trim().startsWith("-")) {
+      return "text-rose-300";
+   }
+
+   return "text-slate-300";
+}
+
 export function PositionCard({
    symbol,
    timeframe,
@@ -46,14 +58,12 @@ export function PositionCard({
    closedAt,
    closeReason,
 }: PositionCardProps) {
-   const isProfit = netPnl.trim().startsWith("+");
-
    return (
       <article className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
                <p className="text-sm text-slate-400">
-                  {symbol} · {timeframe} · {strategyName}
+                  {symbol} • {timeframe} • {strategyName}
                </p>
 
                <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
@@ -146,10 +156,10 @@ export function PositionCard({
                <p
                   className={[
                      "mt-2 text-sm font-semibold",
-                     isProfit ? "text-emerald-300" : "text-rose-300",
+                     getPnlClassName(netPnl),
                   ].join(" ")}
                >
-                  {netPnl} · {netPnlPercent}
+                  {netPnl} • {netPnlPercent}
                </p>
             </div>
 
@@ -167,7 +177,8 @@ export function PositionCard({
             <span>Opened: {openedAt}</span>
             <span>Closed: {closedAt ?? "Still open"}</span>
             <span>
-               Reason: {closeReason ? closeReasonLabelByReason[closeReason] : "N/A"}
+               Reason:{" "}
+               {closeReason ? closeReasonLabelByReason[closeReason] : "N/A"}
             </span>
          </div>
       </article>
