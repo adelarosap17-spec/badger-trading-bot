@@ -13,6 +13,7 @@ import { MarketDataSyncModule } from './market-data-sync/market-data-sync.module
 import { SignalsModule } from './signals/signals.module';
 import { StrategiesModule } from './strategies/strategy.module';
 import { PositionManagerModule } from './position-manager/position-manager.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { PositionManagerModule } from './position-manager/position-manager.modul
     PaperTradingModule,
     PositionsModule,
     PositionManagerModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}

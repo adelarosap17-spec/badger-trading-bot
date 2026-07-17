@@ -2,6 +2,18 @@ import type { StrategyMetricSummary } from "../types/metric.types";
 
 type StrategyMetricCardProps = StrategyMetricSummary;
 
+function getPnlClassName(netPnl: string): string {
+   if (netPnl.trim().startsWith("+")) {
+      return "text-emerald-300";
+   }
+
+   if (netPnl.trim().startsWith("-")) {
+      return "text-rose-300";
+   }
+
+   return "text-slate-300";
+}
+
 export function StrategyMetricCard({
    strategyName,
    symbol,
@@ -13,14 +25,12 @@ export function StrategyMetricCard({
    netPnl,
    expectancy,
 }: StrategyMetricCardProps) {
-   const isProfit = netPnl.trim().startsWith("+");
-
    return (
       <article className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
                <p className="text-sm text-slate-400">
-                  {symbol} · {timeframe}
+                  {symbol} • {timeframe}
                </p>
 
                <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
@@ -38,7 +48,9 @@ export function StrategyMetricCard({
                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                   Win Rate
                </p>
-               <p className="mt-2 text-base font-semibold text-white">{winRate}</p>
+               <p className="mt-2 text-base font-semibold text-white">
+                  {winRate}
+               </p>
             </div>
 
             <div>
@@ -66,7 +78,7 @@ export function StrategyMetricCard({
                <p
                   className={[
                      "mt-2 text-base font-semibold",
-                     isProfit ? "text-emerald-300" : "text-rose-300",
+                     getPnlClassName(netPnl),
                   ].join(" ")}
                >
                   {netPnl}
