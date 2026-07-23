@@ -7,5 +7,6 @@ import { MarketDataSyncService } from './market-data-sync.service';
   imports: [BinanceModule],
   controllers: [MarketDataSyncController],
   providers: [MarketDataSyncService],
+  exports: [MarketDataSyncService],
 })
 export class MarketDataSyncModule {}

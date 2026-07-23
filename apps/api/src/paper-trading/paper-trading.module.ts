@@ -5,5 +5,6 @@ import { PaperTradingService } from './paper-trading.service';
 @Module({
   controllers: [PaperTradingController],
   providers: [PaperTradingService],
+  exports: [PaperTradingService],
 })
 export class PaperTradingModule {}

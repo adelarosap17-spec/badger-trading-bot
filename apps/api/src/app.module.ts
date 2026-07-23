@@ -14,6 +14,7 @@ import { SignalsModule } from './signals/signals.module';
 import { StrategiesModule } from './strategies/strategy.module';
 import { PositionManagerModule } from './position-manager/position-manager.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { BotModule } from './bot/bot.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MetricsModule } from './metrics/metrics.module';
     PositionsModule,
     PositionManagerModule,
     MetricsModule,
+    BotModule,
   ],
 })
 export class AppModule {}
