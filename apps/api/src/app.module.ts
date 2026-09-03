@@ -15,6 +15,7 @@ import { StrategiesModule } from './strategies/strategy.module';
 import { PositionManagerModule } from './position-manager/position-manager.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { BotModule } from './bot/bot.module';
+import { TelegramNotificationModule } from './notifications/telegram/telegram-notification.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { BotModule } from './bot/bot.module';
     PositionManagerModule,
     MetricsModule,
     BotModule,
+    TelegramNotificationModule,
   ],
 })
 export class AppModule {}
