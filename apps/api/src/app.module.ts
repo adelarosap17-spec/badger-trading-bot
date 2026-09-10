@@ -18,6 +18,7 @@ import { BotModule } from './bot/bot.module';
 import { TelegramNotificationModule } from './notifications/telegram/telegram-notification.module';
 import { BinanceAccountModule } from './binance-account/binance-account.module';
 import { BinanceOrdersModule } from './binance-orders/binance-orders.module';
+import { ExchangePositionsModule } from './exchange-positions/exchange-positions.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { BinanceOrdersModule } from './binance-orders/binance-orders.module';
     TelegramNotificationModule,
     BinanceAccountModule,
     BinanceOrdersModule,
+    ExchangePositionsModule,
   ],
 })
 export class AppModule {}
