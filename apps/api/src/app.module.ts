@@ -16,6 +16,8 @@ import { PositionManagerModule } from './position-manager/position-manager.modul
 import { MetricsModule } from './metrics/metrics.module';
 import { BotModule } from './bot/bot.module';
 import { TelegramNotificationModule } from './notifications/telegram/telegram-notification.module';
+import { BinanceAccountModule } from './binance-account/binance-account.module';
+import { BinanceOrdersModule } from './binance-orders/binance-orders.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { TelegramNotificationModule } from './notifications/telegram/telegram-no
     MetricsModule,
     BotModule,
     TelegramNotificationModule,
+    BinanceAccountModule,
+    BinanceOrdersModule,
   ],
 })
 export class AppModule {}
