@@ -5,5 +5,6 @@ import { ExchangePositionsService } from './exchange-positions.service';
 @Module({
   controllers: [ExchangePositionsController],
   providers: [ExchangePositionsService],
+  exports: [ExchangePositionsService],
 })
 export class ExchangePositionsModule {}

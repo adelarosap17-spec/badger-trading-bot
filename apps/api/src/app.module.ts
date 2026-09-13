@@ -19,6 +19,7 @@ import { TelegramNotificationModule } from './notifications/telegram/telegram-no
 import { BinanceAccountModule } from './binance-account/binance-account.module';
 import { BinanceOrdersModule } from './binance-orders/binance-orders.module';
 import { ExchangePositionsModule } from './exchange-positions/exchange-positions.module';
+import { ExchangeRiskModule } from './exchange-risk/exchange-risk.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ExchangePositionsModule } from './exchange-positions/exchange-positions
     BinanceAccountModule,
     BinanceOrdersModule,
     ExchangePositionsModule,
+    ExchangeRiskModule,
   ],
 })
 export class AppModule {}

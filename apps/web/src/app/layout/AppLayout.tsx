@@ -10,6 +10,7 @@ const navigationItems = [
    { label: "Signals", path: "/signals" },
    { label: "Positions", path: "/positions" },
    { label: "Metrics", path: "/metrics" },
+   { label: "Exchange", path: "/exchange" },
 ];
 
 export function AppLayout() {

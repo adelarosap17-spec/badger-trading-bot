@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AppLayout } from "../layout/AppLayout";
 import { DashboardPage } from "../../features/dashboard/pages/DashboardPage";
+import { ExchangePage } from "../../exchange/pages/ExchangePage";
 import { MarketDataPage } from "../../features/market-data/pages/MarketDataPage";
 import { MetricsPage } from "../../features/metrics/pages/MetricsPage";
 import { PositionsPage } from "../../features/positions/pages/PositionsPage";
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
          { path: "signals", element: <SignalsPage /> },
          { path: "positions", element: <PositionsPage /> },
          { path: "metrics", element: <MetricsPage /> },
+         { path: "exchange", element: <ExchangePage /> },
       ],
    },
 ]);
