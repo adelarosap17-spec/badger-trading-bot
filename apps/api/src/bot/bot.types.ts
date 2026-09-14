@@ -1,17 +1,23 @@
+export type BotTradingMode = 'paper' | 'testnet';
+
 export type BotCycleSignalItem = {
   symbol: string;
   timeframe: string;
   signalId: string | null;
   signalType: string | null;
   signalStatus: string | null;
+  tradingMode: BotTradingMode;
   riskDecision: string | null;
   tradeExecuted: boolean;
+  executionVenue: 'paper' | 'binance-testnet' | null;
   orderId: string | null;
   positionId: string | null;
+  exchangeOrderId: string | null;
   errorMessage: string | null;
 };
 
 export type BotCycleResponse = {
+  tradingMode: BotTradingMode;
   startedAt: string;
   finishedAt: string;
   marketDataSync: {
@@ -34,6 +40,11 @@ export type BotCycleResponse = {
     skippedTrades: number;
     failedTrades: number;
   };
+  exchangeTrading: {
+    executedOrders: number;
+    skippedOrders: number;
+    failedOrders: number;
+  };
   positionManager: {
     totalOpenPositions: number;
     closedPositions: number;
@@ -48,13 +59,15 @@ export type BotStatusResponse = {
   lastCycleAt: string | null;
   lastCycleMessage: string | null;
   lastCycleSummary: {
+    tradingMode: BotTradingMode;
     syncedPairs: number;
     failedPairs: number;
     successfulEvaluations: number;
     failedEvaluations: number;
     approvedSignals: number;
     rejectedSignals: number;
-    executedTrades: number;
+    executedPaperTrades: number;
+    executedExchangeOrders: number;
     closedPositions: number;
   } | null;
   counts: {
