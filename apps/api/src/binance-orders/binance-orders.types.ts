@@ -37,6 +37,7 @@ export type BinanceTestnetMarketBuyResponse = {
   mode: 'testnet';
   symbol: string;
   quoteOrderQty: string;
+  riskDecision: 'approved';
   exchangeOrderId: string;
   order: BinanceOrderResponse;
 };

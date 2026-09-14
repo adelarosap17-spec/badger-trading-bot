@@ -1,7 +1,8 @@
 import { createHmac } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
+import { ExchangeRiskService } from '../exchange-risk/exchange-risk.service';
 import {
   BinanceOrderResponse,
   BinanceTestnetMarketBuyRequest,
@@ -33,6 +34,7 @@ export class BinanceOrdersService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly exchangeRiskService: ExchangeRiskService,
   ) {}
 
   async createTestnetMarketBuy(
@@ -41,7 +43,20 @@ export class BinanceOrdersService {
     const symbol = request.symbol.trim().toUpperCase();
     const quoteOrderQty = request.quoteOrderQty.trim();
 
-    this.validateMarketBuyRequest({ symbol, quoteOrderQty });
+    const riskResult = await this.exchangeRiskService.evaluateTestnetMarketBuy({
+      symbol,
+      quoteOrderQty,
+    });
+
+    if (riskResult.decision !== 'approved') {
+      throw new BadRequestException({
+        message: 'Exchange risk guard rejected the market buy.',
+        reasons: riskResult.reasons,
+        checks: riskResult.checks,
+        limits: riskResult.limits,
+        currentState: riskResult.currentState,
+      });
+    }
 
     const order = await this.signedPost<BinanceOrderResponse>('/v3/order', {
       symbol,
@@ -57,7 +72,6 @@ export class BinanceOrdersService {
       side: 'BUY',
       type: 'MARKET',
       quoteOrderQty,
-      quantity: null,
       order,
     });
 
@@ -65,6 +79,7 @@ export class BinanceOrdersService {
       mode: 'testnet',
       symbol,
       quoteOrderQty,
+      riskDecision: 'approved',
       exchangeOrderId,
       order,
     };
@@ -92,7 +107,6 @@ export class BinanceOrdersService {
       side: 'SELL',
       type: 'MARKET',
       quoteOrderQty: null,
-      quantity,
       order,
     });
 
@@ -153,7 +167,6 @@ export class BinanceOrdersService {
     side: string;
     type: string;
     quoteOrderQty: string | null;
-    quantity: string | null;
     order: BinanceOrderResponse;
   }): Promise<string> {
     const averagePrice = this.calculateAveragePrice(params.order);
@@ -210,47 +223,25 @@ export class BinanceOrdersService {
     return (cumulativeQuoteQty / executedQty).toString();
   }
 
-  private validateMarketBuyRequest(request: BinanceTestnetMarketBuyRequest): void {
-    if (!request.symbol) {
-      throw new Error('symbol is required.');
-    }
-
-    if (!/^[A-Z0-9]{5,20}$/.test(request.symbol)) {
-      throw new Error('symbol format is invalid.');
-    }
-
-    const quoteOrderQty = Number(request.quoteOrderQty);
-
-    if (!Number.isFinite(quoteOrderQty) || quoteOrderQty <= 0) {
-      throw new Error('quoteOrderQty must be greater than zero.');
-    }
-
-    if (quoteOrderQty > 25) {
-      throw new Error(
-        'quoteOrderQty cannot be greater than 25 USDT in this test endpoint.',
-      );
-    }
-  }
-
   private validateMarketSellRequest(
     request: BinanceTestnetMarketSellRequest,
   ): void {
     if (!request.symbol) {
-      throw new Error('symbol is required.');
+      throw new BadRequestException('symbol is required.');
     }
 
     if (!/^[A-Z0-9]{5,20}$/.test(request.symbol)) {
-      throw new Error('symbol format is invalid.');
+      throw new BadRequestException('symbol format is invalid.');
     }
 
     const quantity = Number(request.quantity);
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
-      throw new Error('quantity must be greater than zero.');
+      throw new BadRequestException('quantity must be greater than zero.');
     }
 
     if (quantity > 1) {
-      throw new Error(
+      throw new BadRequestException(
         'quantity cannot be greater than 1 unit in this test endpoint.',
       );
     }
