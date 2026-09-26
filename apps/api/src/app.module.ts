@@ -20,6 +20,8 @@ import { BinanceAccountModule } from './binance-account/binance-account.module';
 import { BinanceOrdersModule } from './binance-orders/binance-orders.module';
 import { ExchangePositionsModule } from './exchange-positions/exchange-positions.module';
 import { ExchangeRiskModule } from './exchange-risk/exchange-risk.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { BotSchedulerModule } from './bot-scheduler/bot-scheduler.module';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { ExchangeRiskModule } from './exchange-risk/exchange-risk.module';
     BinanceOrdersModule,
     ExchangePositionsModule,
     ExchangeRiskModule,
+    ScheduleModule.forRoot(),
+    BotSchedulerModule,
   ],
 })
 export class AppModule {}

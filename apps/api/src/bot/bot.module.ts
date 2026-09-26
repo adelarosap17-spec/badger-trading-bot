@@ -21,5 +21,6 @@ import { BotService } from './bot.service';
   ],
   controllers: [BotController],
   providers: [BotService],
+  exports: [BotService],
 })
 export class BotModule {}

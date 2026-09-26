@@ -3,6 +3,16 @@ import { Cron } from '@nestjs/schedule';
 import { BinanceService } from '../binance/binance.service';
 import { PrismaService } from '../database/prisma.service';
 
+type SyncSymbolRow = {
+  id: string;
+  symbol: string;
+};
+
+type SyncTimeframeRow = {
+  id: string;
+  code: string;
+};
+
 type MarketDataSyncItem = {
   symbol: string;
   timeframe: string;
@@ -52,23 +62,19 @@ export class MarketDataSyncService {
     const startedAt = new Date();
     const limit = this.getSyncLimit();
 
-    const symbols = await this.prisma.symbols.findMany({
-      where: {
-        is_active: true,
-      },
-      orderBy: {
-        symbol: 'asc',
-      },
-    });
+    const symbols = await this.prisma.$queryRaw<SyncSymbolRow[]>`
+  select id, symbol
+  from symbols
+  where is_active = true
+  order by symbol asc
+`;
 
-    const timeframes = await this.prisma.timeframes.findMany({
-      where: {
-        is_active: true,
-      },
-      orderBy: {
-        duration_seconds: 'asc',
-      },
-    });
+    const timeframes = await this.prisma.$queryRaw<SyncTimeframeRow[]>`
+  select id, code
+  from timeframes
+  where is_active = true
+  order by duration_seconds asc
+`;
 
     const items: MarketDataSyncItem[] = [];
 
