@@ -1,5 +1,9 @@
 import { apiGet } from "../../../shared/lib/apiClient";
-import type { BotLogResponse, BotStatusResponse } from "../types/dashboard.types";
+import type {
+   BotLogResponse,
+   BotSchedulerStatusResponse,
+   BotStatusResponse,
+} from "../types/dashboard.types";
 
 export async function fetchBotStatus(): Promise<BotStatusResponse> {
    return apiGet<BotStatusResponse>("/bot/status");
@@ -7,4 +11,8 @@ export async function fetchBotStatus(): Promise<BotStatusResponse> {
 
 export async function fetchBotLogs(): Promise<BotLogResponse[]> {
    return apiGet<BotLogResponse[]>("/bot/logs");
+}
+
+export async function fetchBotSchedulerStatus(): Promise<BotSchedulerStatusResponse> {
+   return apiGet<BotSchedulerStatusResponse>("/bot-scheduler/status");
 }

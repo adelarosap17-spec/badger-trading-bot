@@ -5,13 +5,16 @@ export type BotStatusResponse = {
    lastCycleAt: string | null;
    lastCycleMessage: string | null;
    lastCycleSummary: {
+      tradingMode?: "paper" | "testnet";
       syncedPairs: number;
       failedPairs: number;
       successfulEvaluations: number;
       failedEvaluations: number;
       approvedSignals: number;
       rejectedSignals: number;
-      executedTrades: number;
+      executedTrades?: number;
+      executedPaperTrades?: number;
+      executedExchangeOrders?: number;
       closedPositions: number;
    } | null;
    counts: {
@@ -31,4 +34,13 @@ export type BotLogResponse = {
    message: string;
    metadata: unknown;
    createdAt: string;
+};
+
+export type BotSchedulerStatusResponse = {
+   enabled: boolean;
+   intervalMinutes: number;
+   isRunning: boolean;
+   lastRunAt: string | null;
+   lastRunStatus: "success" | "failed" | null;
+   lastRunError: string | null;
 };

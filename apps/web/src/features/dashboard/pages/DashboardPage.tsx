@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
-import { fetchBotLogs, fetchBotStatus } from "../services/dashboard.service";
-import type { BotLogResponse, BotStatusResponse } from "../types/dashboard.types";
+import {
+   fetchBotLogs,
+   fetchBotSchedulerStatus,
+   fetchBotStatus,
+} from "../services/dashboard.service";
+import type {
+   BotLogResponse,
+   BotSchedulerStatusResponse,
+   BotStatusResponse,
+} from "../types/dashboard.types";
 
 function getStatusClassName(status: BotStatusResponse["status"]): string {
    if (status === "ready") {
@@ -14,9 +22,50 @@ function getStatusClassName(status: BotStatusResponse["status"]): string {
    return "bg-rose-400/10 text-rose-300 ring-rose-400/20";
 }
 
+function getSchedulerStatusClassName(
+   schedulerStatus: BotSchedulerStatusResponse,
+): string {
+   if (schedulerStatus.enabled) {
+      return "bg-emerald-400/10 text-emerald-300 ring-emerald-400/20";
+   }
+
+   return "bg-slate-400/10 text-slate-300 ring-slate-400/20";
+}
+
+function getLastRunStatusClassName(
+   lastRunStatus: BotSchedulerStatusResponse["lastRunStatus"],
+): string {
+   if (lastRunStatus === "success") {
+      return "text-emerald-300";
+   }
+
+   if (lastRunStatus === "failed") {
+      return "text-rose-300";
+   }
+
+   return "text-slate-300";
+}
+
+function getExecutedTradesCount(status: BotStatusResponse): number {
+   const summary = status.lastCycleSummary;
+
+   if (!summary) {
+      return 0;
+   }
+
+   return (
+      summary.executedTrades ??
+      summary.executedPaperTrades ??
+      summary.executedExchangeOrders ??
+      0
+   );
+}
+
 export function DashboardPage() {
    const [status, setStatus] = useState<BotStatusResponse | null>(null);
    const [logs, setLogs] = useState<BotLogResponse[]>([]);
+   const [schedulerStatus, setSchedulerStatus] =
+      useState<BotSchedulerStatusResponse | null>(null);
    const [isLoading, setIsLoading] = useState<boolean>(true);
    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -28,10 +77,12 @@ export function DashboardPage() {
             setIsLoading(true);
             setErrorMessage(null);
 
-            const [statusResponse, logsResponse] = await Promise.all([
-               fetchBotStatus(),
-               fetchBotLogs(),
-            ]);
+            const [statusResponse, logsResponse, schedulerResponse] =
+               await Promise.all([
+                  fetchBotStatus(),
+                  fetchBotLogs(),
+                  fetchBotSchedulerStatus(),
+               ]);
 
             if (!isMounted) {
                return;
@@ -39,6 +90,7 @@ export function DashboardPage() {
 
             setStatus(statusResponse);
             setLogs(logsResponse);
+            setSchedulerStatus(schedulerResponse);
          } catch (error) {
             if (!isMounted) {
                return;
@@ -77,7 +129,7 @@ export function DashboardPage() {
 
                <p className="mt-3 max-w-3xl text-base leading-7 text-slate-400">
                   Resumen general del bot, último ciclo operativo, señales,
-                  posiciones, órdenes y logs recientes.
+                  posiciones, órdenes, scheduler y logs recientes.
                </p>
             </div>
 
@@ -116,6 +168,12 @@ export function DashboardPage() {
                            {status.lastCycleAt ?? "No cycle yet"}
                         </h2>
                      </div>
+
+                     {status.lastCycleSummary?.tradingMode ? (
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase text-slate-300 ring-1 ring-white/10">
+                           {status.lastCycleSummary.tradingMode}
+                        </span>
+                     ) : null}
                   </div>
 
                   <p className="mt-4 text-sm leading-6 text-slate-300">
@@ -124,7 +182,7 @@ export function DashboardPage() {
                   </p>
 
                   {status.lastCycleSummary ? (
-                     <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                     <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                         <div>
                            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                               Synced Pairs
@@ -145,10 +203,21 @@ export function DashboardPage() {
 
                         <div>
                            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                              Trades
+                              Paper Trades
                            </p>
                            <p className="mt-2 text-base font-semibold text-white">
-                              {status.lastCycleSummary.executedTrades}
+                              {status.lastCycleSummary.executedPaperTrades ??
+                                 status.lastCycleSummary.executedTrades ??
+                                 0}
+                           </p>
+                        </div>
+
+                        <div>
+                           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Exchange Orders
+                           </p>
+                           <p className="mt-2 text-base font-semibold text-white">
+                              {status.lastCycleSummary.executedExchangeOrders ?? 0}
                            </p>
                         </div>
 
@@ -193,6 +262,85 @@ export function DashboardPage() {
                      </h2>
                   </article>
                </div>
+
+               {schedulerStatus ? (
+                  <article className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+                     <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                           <p className="text-sm text-slate-400">Bot Scheduler</p>
+
+                           <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+                              {schedulerStatus.enabled
+                                 ? "Automatic Mode Enabled"
+                                 : "Automatic Mode Disabled"}
+                           </h2>
+                        </div>
+
+                        <span
+                           className={[
+                              "rounded-full px-3 py-1 text-xs font-semibold uppercase ring-1",
+                              getSchedulerStatusClassName(schedulerStatus),
+                           ].join(" ")}
+                        >
+                           {schedulerStatus.enabled ? "enabled" : "disabled"}
+                        </span>
+                     </div>
+
+                     <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                        <div>
+                           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Interval
+                           </p>
+                           <p className="mt-2 text-base font-semibold text-white">
+                              {schedulerStatus.intervalMinutes} min
+                           </p>
+                        </div>
+
+                        <div>
+                           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Running
+                           </p>
+                           <p className="mt-2 text-base font-semibold text-white">
+                              {schedulerStatus.isRunning ? "Yes" : "No"}
+                           </p>
+                        </div>
+
+                        <div>
+                           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Last Run
+                           </p>
+                           <p className="mt-2 text-base font-semibold text-white">
+                              {schedulerStatus.lastRunAt ?? "N/A"}
+                           </p>
+                        </div>
+
+                        <div>
+                           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Last Status
+                           </p>
+                           <p
+                              className={[
+                                 "mt-2 text-base font-semibold",
+                                 getLastRunStatusClassName(
+                                    schedulerStatus.lastRunStatus,
+                                 ),
+                              ].join(" ")}
+                           >
+                              {schedulerStatus.lastRunStatus ?? "N/A"}
+                           </p>
+                        </div>
+
+                        <div>
+                           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Last Error
+                           </p>
+                           <p className="mt-2 text-base font-semibold text-slate-300">
+                              {schedulerStatus.lastRunError ?? "None"}
+                           </p>
+                        </div>
+                     </div>
+                  </article>
+               ) : null}
 
                <section>
                   <div className="mb-4">
