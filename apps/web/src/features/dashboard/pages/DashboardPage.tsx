@@ -46,20 +46,6 @@ function getLastRunStatusClassName(
    return "text-slate-300";
 }
 
-function getExecutedTradesCount(status: BotStatusResponse): number {
-   const summary = status.lastCycleSummary;
-
-   if (!summary) {
-      return 0;
-   }
-
-   return (
-      summary.executedTrades ??
-      summary.executedPaperTrades ??
-      summary.executedExchangeOrders ??
-      0
-   );
-}
 
 export function DashboardPage() {
    const [status, setStatus] = useState<BotStatusResponse | null>(null);
