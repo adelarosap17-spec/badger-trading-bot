@@ -40,10 +40,32 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
-    env_file:
-      - .env.production
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3000}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+      MARKET_DATA_SYNC_ENABLED: ${MARKET_DATA_SYNC_ENABLED:-false}
+      MARKET_DATA_SYNC_LIMIT: ${MARKET_DATA_SYNC_LIMIT:-100}
+
+      BOT_TRADING_MODE: ${BOT_TRADING_MODE:-paper}
+      BOT_TESTNET_QUOTE_ORDER_QTY: ${BOT_TESTNET_QUOTE_ORDER_QTY:-10}
+
+      BOT_AUTO_RUN_ENABLED: ${BOT_AUTO_RUN_ENABLED:-false}
+      BOT_AUTO_RUN_INTERVAL_MINUTES: ${BOT_AUTO_RUN_INTERVAL_MINUTES:-15}
+
+      TELEGRAM_ENABLED: ${TELEGRAM_ENABLED:-false}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+
+      BINANCE_TRADING_MODE: ${BINANCE_TRADING_MODE:-testnet}
+      BINANCE_TESTNET_BASE_URL: ${BINANCE_TESTNET_BASE_URL:-https://testnet.binance.vision/api}
+      BINANCE_TESTNET_API_KEY: ${BINANCE_TESTNET_API_KEY:-}
+      BINANCE_TESTNET_API_SECRET: ${BINANCE_TESTNET_API_SECRET:-}
+
+      EXCHANGE_RISK_MAX_QUOTE_ORDER_QTY: ${EXCHANGE_RISK_MAX_QUOTE_ORDER_QTY:-10}
+      EXCHANGE_RISK_MAX_DAILY_BUY_ORDERS: ${EXCHANGE_RISK_MAX_DAILY_BUY_ORDERS:-5}
+      EXCHANGE_RISK_BLOCK_DUPLICATE_OPEN_SYMBOL: ${EXCHANGE_RISK_BLOCK_DUPLICATE_OPEN_SYMBOL:-true}
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 30s
