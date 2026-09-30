@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { BinanceService } from '../binance/binance.service';
+import { CoinbaseService } from '../coinbase/coinbase.service';
 import { PrismaService } from '../database/prisma.service';
+
+type MarketDataProvider = 'binance' | 'coinbase';
 
 type SyncSymbolRow = {
   id: string;
@@ -16,6 +19,7 @@ type SyncTimeframeRow = {
 type MarketDataSyncItem = {
   symbol: string;
   timeframe: string;
+  provider: MarketDataProvider;
   status: 'synced' | 'failed';
   insertedCandles: number;
   skippedCandles: number;
@@ -26,6 +30,7 @@ export type MarketDataSyncRunResponse = {
   startedAt: string;
   finishedAt: string;
   syncEnabled: boolean;
+  provider: MarketDataProvider;
   limit: number;
   totalPairs: number;
   syncedPairs: number;
@@ -40,6 +45,7 @@ export class MarketDataSyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly binanceService: BinanceService,
+    private readonly coinbaseService: CoinbaseService,
   ) {}
 
   @Cron('0 */15 * * * *')
@@ -54,13 +60,14 @@ export class MarketDataSyncService {
     const result = await this.runSync();
 
     this.logger.log(
-      `Market data sync finished. Synced=${result.syncedPairs}, Failed=${result.failedPairs}`,
+      `Market data sync finished. Provider=${result.provider}, Synced=${result.syncedPairs}, Failed=${result.failedPairs}`,
     );
   }
 
   async runSync(): Promise<MarketDataSyncRunResponse> {
     const startedAt = new Date();
     const limit = this.getSyncLimit();
+    const provider = this.getMarketDataProvider();
 
     const symbols = await this.prisma.$queryRaw<SyncSymbolRow[]>`
   select id, symbol
@@ -81,7 +88,8 @@ export class MarketDataSyncService {
     for (const symbol of symbols) {
       for (const timeframe of timeframes) {
         try {
-          const result = await this.binanceService.syncCandles({
+          const result = await this.syncCandles({
+            provider,
             symbol: symbol.symbol,
             timeframe: timeframe.code,
             limit: limit.toString(),
@@ -90,6 +98,7 @@ export class MarketDataSyncService {
           items.push({
             symbol: symbol.symbol,
             timeframe: timeframe.code,
+            provider,
             status: 'synced',
             insertedCandles: result.insertedCandles,
             skippedCandles: result.skippedCandles,
@@ -102,6 +111,7 @@ export class MarketDataSyncService {
           items.push({
             symbol: symbol.symbol,
             timeframe: timeframe.code,
+            provider,
             status: 'failed',
             insertedCandles: 0,
             skippedCandles: 0,
@@ -109,7 +119,7 @@ export class MarketDataSyncService {
           });
 
           this.logger.error(
-            `Failed syncing ${symbol.symbol} ${timeframe.code}: ${errorMessage}`,
+            `Failed syncing ${symbol.symbol} ${timeframe.code} with ${provider}: ${errorMessage}`,
           );
         }
       }
@@ -123,12 +133,34 @@ export class MarketDataSyncService {
       startedAt: startedAt.toISOString(),
       finishedAt: finishedAt.toISOString(),
       syncEnabled: this.isSyncEnabled(),
+      provider,
       limit,
       totalPairs: items.length,
       syncedPairs,
       failedPairs,
       items,
     };
+  }
+
+  private async syncCandles(params: {
+    provider: MarketDataProvider;
+    symbol: string;
+    timeframe: string;
+    limit: string;
+  }): Promise<{ insertedCandles: number; skippedCandles: number }> {
+    if (params.provider === 'coinbase') {
+      return this.coinbaseService.syncCandles({
+        symbol: params.symbol,
+        timeframe: params.timeframe,
+        limit: params.limit,
+      });
+    }
+
+    return this.binanceService.syncCandles({
+      symbol: params.symbol,
+      timeframe: params.timeframe,
+      limit: params.limit,
+    });
   }
 
   private isSyncEnabled(): boolean {
@@ -147,10 +179,22 @@ export class MarketDataSyncService {
       return 100;
     }
 
-    if (parsedLimit > 1000) {
-      return 1000;
+    if (parsedLimit > 300) {
+      return 300;
     }
 
     return parsedLimit;
+  }
+
+  private getMarketDataProvider(): MarketDataProvider {
+    const provider = (process.env.MARKET_DATA_PROVIDER ?? 'binance')
+      .trim()
+      .toLowerCase();
+
+    if (provider === 'coinbase') {
+      return 'coinbase';
+    }
+
+    return 'binance';
   }
 }
